@@ -34,4 +34,16 @@ public class Employee {
     @Column(name = "empStatus")
     private EmployeeStatus status;
 
+    public static String filterFieldMapper(String filterField) {
+        return switch (filterField.toLowerCase()) {
+            case "empid" -> "id";
+            case "empname" -> "name";
+            case "empemail" -> "email";
+            case "empphone" -> "phone";
+            case "empaddress" -> "address";
+            case "empstatus" -> "status";
+            default -> throw new IllegalArgumentException("Unknown filter field: " + filterField);
+        };
+    }
+
 }

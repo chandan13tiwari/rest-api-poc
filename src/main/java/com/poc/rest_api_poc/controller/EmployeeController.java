@@ -2,12 +2,18 @@ package com.poc.rest_api_poc.controller;
 
 import com.poc.rest_api_poc.entity.Employee;
 import com.poc.rest_api_poc.exception.EmployeeException;
+import com.poc.rest_api_poc.model.FilterDelimeter;
 import com.poc.rest_api_poc.model.EmployeeStatus;
+import com.poc.rest_api_poc.service.EmployeeFilterService;
 import com.poc.rest_api_poc.service.EmployeeService;
+import com.poc.rest_api_poc.utils.AppConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -15,9 +21,12 @@ import java.util.List;
 public class EmployeeController {
 
     private final EmployeeService employeeService;
+    private final EmployeeFilterService employeeFilterService;
+    public static final Logger LOG = LoggerFactory.getLogger(EmployeeController.class);
 
-    public EmployeeController(EmployeeService employeeService) {
+    public EmployeeController(EmployeeService employeeService ,EmployeeFilterService employeeFilterService) {
         this.employeeService = employeeService;
+        this.employeeFilterService = employeeFilterService;
     }
 
     @GetMapping("/{id}")
@@ -83,5 +92,50 @@ public class EmployeeController {
         return ResponseEntity.ok(employeeService.fetchEmployeeByStatus(empStatus));
     }
 
+    @GetMapping("/filter")
+    public ResponseEntity<List<Employee>> getFilteredEmployee(@RequestParam("q") List<String> queries) {
+        LOG.info("Query received: {}", queries);
+        List<Employee> filteredEmployees = new ArrayList<>();
+        // splitting filters
+        try {
+            for(String filter : queries) {
+                LOG.info("Processing filter: {}", filter);
+                String[] filterSplit = filter.split(AppConstants.SPACE);
 
+                switch (FilterDelimeter.convertToFilterDelimeter(filterSplit[1])) {
+                    case EQ -> {
+                        LOG.info("delimeter is eq");
+                        filteredEmployees = employeeFilterService.handleEq(filterSplit[0], filterSplit[2], filteredEmployees);
+                    }
+
+                    case EW -> {
+                        LOG.info("delimeter is ew");
+                        filteredEmployees = employeeFilterService.handleEw(filterSplit[0], filterSplit[2], filteredEmployees);
+                    }
+
+                    case SW -> {
+                        LOG.info("delimeter is sw");
+                        filteredEmployees = employeeFilterService.handleSw(filterSplit[0], filterSplit[2], filteredEmployees);
+                    }
+
+                    case CONTAINS -> {
+                        LOG.info("delimeter is contains");
+                        filteredEmployees = employeeFilterService.handleContains(filterSplit[0], filterSplit[2], filteredEmployees);
+                    }
+
+                    default -> throw new IllegalArgumentException("Unknown query delimeter: " + filterSplit[1]);
+                }
+            }
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.internalServerError().build();
+        } catch (EmployeeException ex) {
+            if(ex.getHttpStatusCode() == HttpStatus.NOT_FOUND) {
+                return ResponseEntity.notFound().build();
+            }
+
+            return ResponseEntity.internalServerError().build();
+        }
+
+        return ResponseEntity.ok(filteredEmployees);
+    }
 }
