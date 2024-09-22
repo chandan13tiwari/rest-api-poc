@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class EmployeeFilterService {
@@ -25,86 +26,44 @@ public class EmployeeFilterService {
 
     public List<Employee> handleEq(String lhs, String rhs, List<Employee> filteredEmployees) {
         LOG.info("handleEq :: lhs: {} and rhs: {}", lhs, rhs);
-        List<Employee> employees = new ArrayList<>();
 
-        switch (lhs.toLowerCase()) {
-            case "empid" -> {
-                if(filteredEmployees.isEmpty()) {
-                    return List.of(employeeService.findEmployeeById(Integer.parseInt(rhs)));
-                }
-
-                filteredEmployees.forEach(emp -> {
-                    if(emp.getId() == Integer.parseInt(rhs)) {
-                        employees.add(emp);
-                    }
-                });
-            }
-
-            case "empname" -> {
-                if(filteredEmployees.isEmpty()) {
-                    return employeeRepository.findEmployeeByName(rhs);
-                }
-
-                filteredEmployees.forEach(emp -> {
-                    if(emp.getName().equals(rhs)) {
-                        employees.add(emp);
-                    }
-                });
-            }
-
-            case "empemail" -> {
-                if(filteredEmployees.isEmpty()) {
-                    return employeeRepository.findEmployeeByEmail(rhs);
-                }
-
-                filteredEmployees.forEach(emp -> {
-                    if(emp.getEmail().equals(rhs)) {
-                        employees.add(emp);
-                    }
-                });
-            }
-
-            case "empphone" -> {
-                if(filteredEmployees.isEmpty()) {
-                   return employeeRepository.findEmployeeByPhone(rhs);
-                }
-
-                filteredEmployees.forEach(emp -> {
-                    if(emp.getPhone().equals(rhs)) {
-                        employees.add(emp);
-                    }
-                });
-            }
-
-            case "empaddress" -> {
-                if(filteredEmployees.isEmpty()) {
-                    return employeeRepository.findEmployeeByAddress(rhs);
-                }
-
-                filteredEmployees.forEach(emp -> {
-                    if(emp.getAddress().equals(rhs)) {
-                        employees.add(emp);
-                    }
-                });
-            }
-
-            case "empstatus" -> {
-                if(filteredEmployees.isEmpty()) {
-                    return employeeService.fetchEmployeeByStatus(EmployeeStatus.valueOf(rhs.toUpperCase()));
-                }
-
-                filteredEmployees.forEach(emp -> {
-                    if(emp.getStatus().equals(EmployeeStatus.valueOf(rhs.toUpperCase()))) {
-                        employees.add(emp);
-                    }
-                });
-            }
-
-            default -> throw new IllegalArgumentException("Unknown filter field: " + lhs);
+        if (filteredEmployees.isEmpty()) {
+            return getEmployeesFromRepository(lhs, rhs);
         }
 
-        return employees;
+        return filterEmployees(lhs, rhs, filteredEmployees);
     }
+
+    private List<Employee> getEmployeesFromRepository(String lhs, String rhs) {
+        return switch (lhs.toLowerCase()) {
+            case "empid" -> List.of(employeeService.findEmployeeById(Integer.parseInt(rhs)));
+            case "empname" -> employeeRepository.findEmployeeByName(rhs);
+            case "empemail" -> employeeRepository.findEmployeeByEmail(rhs);
+            case "empphone" -> employeeRepository.findEmployeeByPhone(rhs);
+            case "empaddress" -> employeeRepository.findEmployeeByAddress(rhs);
+            case "empstatus" -> employeeService.fetchEmployeeByStatus(EmployeeStatus.valueOf(rhs.toUpperCase()));
+            default -> throw new IllegalArgumentException("Unknown filter field: " + lhs);
+        };
+    }
+
+    private List<Employee> filterEmployees(String lhs, String rhs, List<Employee> filteredEmployees) {
+        return filteredEmployees.stream()
+                .filter(emp -> matches(emp, lhs, rhs))
+                .toList();
+    }
+
+    private boolean matches(Employee emp, String lhs, String rhs) {
+        return switch (lhs.toLowerCase()) {
+            case "empid" -> emp.getId() == Integer.parseInt(rhs);
+            case "empname" -> emp.getName().equals(rhs);
+            case "empemail" -> emp.getEmail().equals(rhs);
+            case "empphone" -> emp.getPhone().equals(rhs);
+            case "empaddress" -> emp.getAddress().equals(rhs);
+            case "empstatus" -> emp.getStatus().equals(EmployeeStatus.valueOf(rhs.toUpperCase()));
+            default -> false;
+        };
+    }
+
 
     public List<Employee> handleSw(String lhs, String rhs, List<Employee> filteredEmployees) {
         LOG.info("handleSw :: lhs: {} and rhs: {}", lhs, rhs);
@@ -131,7 +90,7 @@ public class EmployeeFilterService {
 
         if (lhs.equalsIgnoreCase("empname")) {
             if(filteredEmployees.isEmpty())
-                return employeeRepository.findEmployeesByNameStartingWith(rhs);
+                return employeeRepository.findEmployeesByNameEndingWith(rhs);
 
             filteredEmployees.forEach(emp -> {
                 if(emp.getName().endsWith(rhs)) {
