@@ -54,6 +54,19 @@ public class EmployeeService {
         return allEmployees;
     }
 
+    public Page<Employee> findAllEmployeeHATEOAS(Pageable pageable) {
+        LOG.info("Started fetching all employees from DB");
+
+        //Pageable pageable = PageRequest.of(page, size);
+        Page<Employee> allEmployees = employeeRepository.findAll(pageable);
+        if(allEmployees.isEmpty())
+            LOG.info("No Employees added in DB");
+        else
+            LOG.info("Fetched all employees from DB");
+
+        return allEmployees;
+    }
+
     public Employee createEmployee(Employee employee) {
         LOG.info("Started creating new Employee with details: {}", employee);
         employee.setStatus(EmployeeStatus.ACTIVE);
