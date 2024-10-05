@@ -6,6 +6,10 @@ import com.poc.rest_api_poc.model.EmployeeStatus;
 import com.poc.rest_api_poc.repository.EmployeeRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -36,10 +40,12 @@ public class EmployeeService {
         return employee.get();
     }
 
-    public List<Employee> findAllEmployee() {
+    public Page<Employee> findAllEmployee(int page, int size) {
         LOG.info("Started fetching all employees from DB");
 
-        List<Employee> allEmployees = employeeRepository.findAll();
+        //Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
+        Page<Employee> allEmployees = employeeRepository.findAll(pageable);
         if(allEmployees.isEmpty())
             LOG.info("No Employees added in DB");
         else
