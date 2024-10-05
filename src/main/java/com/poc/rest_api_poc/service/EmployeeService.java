@@ -5,6 +5,9 @@ import com.poc.rest_api_poc.exception.EmployeeException;
 import com.poc.rest_api_poc.exception.EmployeeNotFoundException;
 import com.poc.rest_api_poc.model.EmployeeStatus;
 import com.poc.rest_api_poc.repository.EmployeeRepository;
+import io.github.resilience4j.ratelimiter.RateLimiter;
+import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -22,10 +25,13 @@ public class EmployeeService {
 
     private final EmployeeRepository employeeRepository;
 
+    private final RateLimiter rateLimiter;
+
     private static final Logger LOG = LoggerFactory.getLogger(EmployeeService.class);
 
-    public EmployeeService(EmployeeRepository employeeRepository) {
+    public EmployeeService(EmployeeRepository employeeRepository, RateLimiterRegistry rateLimiterRegistry) {
         this.employeeRepository = employeeRepository;
+        this.rateLimiter = rateLimiterRegistry.rateLimiter("employeeRateLimiter");
     }
 
     public Employee findEmployeeById(int empId) {
@@ -41,17 +47,27 @@ public class EmployeeService {
         return employee.get();
     }
 
-    public Employee findEmployeeByIdTestExceptionHandler(int empId) {
-        LOG.info("Started looking for Employee with ID: {}", empId);
 
-        Optional<Employee> employee = employeeRepository.findById(empId);
-        if(employee.isEmpty()) {
-            LOG.info("Employee with ID: {} not found!", empId);
-            throw new EmployeeNotFoundException("Employee not found with id: " + empId);
+    public Employee findEmployeeByIdTestExceptionHandler(int empId) {
+        try {
+            return RateLimiter.decorateSupplier(rateLimiter, () -> {
+                LOG.info("Started looking for Employee with ID: {}", empId);
+
+                Optional<Employee> employee = employeeRepository.findById(empId);
+                if(employee.isEmpty()) {
+                    LOG.info("Employee with ID: {} not found!", empId);
+                    throw new EmployeeNotFoundException("Employee not found with id: " + empId);
+                }
+
+                LOG.info("Employee fetched for ID: {} :: {}", empId, employee.get());
+                return employee.get();
+            }).get();
+        } catch (RequestNotPermitted e) {
+            // Handle rate limit exceeded case
+            LOG.error(e.getMessage());
+            throw new EmployeeException("Too many requests", HttpStatus.TOO_MANY_REQUESTS);
         }
 
-        LOG.info("Employee fetched for ID: {} :: {}", empId, employee.get());
-        return employee.get();
     }
 
     public Page<Employee> findAllEmployee(int page, int size) {

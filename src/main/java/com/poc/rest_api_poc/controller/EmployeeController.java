@@ -8,6 +8,7 @@ import com.poc.rest_api_poc.model.EmployeeStatus;
 import com.poc.rest_api_poc.service.EmployeeFilterService;
 import com.poc.rest_api_poc.service.EmployeeService;
 import com.poc.rest_api_poc.utils.AppConstants;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -35,7 +36,7 @@ public class EmployeeController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Employee> fetchEmployeeById(@PathVariable("id") int empId) {
+    public ResponseEntity fetchEmployeeById(@PathVariable("id") int empId) {
         try {
             //return ResponseEntity.ok(employeeService.findEmployeeById(empId));
             return ResponseEntity.ok(employeeService.findEmployeeByIdTestExceptionHandler(empId));
@@ -44,6 +45,9 @@ public class EmployeeController {
         } catch (EmployeeException ex) {
             if(ex.getHttpStatusCode() == HttpStatus.NOT_FOUND) {
                 return ResponseEntity.notFound().build();
+            }
+            else if(ex.getHttpStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
+                return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(ex.getMessage());
             }
 
             return ResponseEntity.internalServerError().build();
