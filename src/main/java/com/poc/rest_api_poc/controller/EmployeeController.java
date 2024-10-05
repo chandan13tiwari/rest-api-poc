@@ -9,6 +9,10 @@ import com.poc.rest_api_poc.service.EmployeeService;
 import com.poc.rest_api_poc.utils.AppConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -43,9 +47,27 @@ public class EmployeeController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Employee>> fetchAllEmployee() {
+    public ResponseEntity<Page<Employee>> fetchAllEmployee(@RequestParam(name = "page", defaultValue = "0") int page,
+                                                           @RequestParam(name = "size", defaultValue = "5") int size) {
         try {
-            return ResponseEntity.ok(employeeService.findAllEmployee());
+            return ResponseEntity.ok(employeeService.findAllEmployee(page, size));
+        } catch (EmployeeException ex) {
+            if(ex.getHttpStatusCode() == HttpStatus.NOT_FOUND) {
+                return ResponseEntity.notFound().build();
+            }
+
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+
+    @GetMapping("/all")
+    public ResponseEntity<PagedModel> fetchAllEmployeeHATEOAS(@RequestParam(name = "page", defaultValue = "0") int page,
+                                                              @RequestParam(name = "size", defaultValue = "5") int size,
+                                                              Pageable pageable, PagedResourcesAssembler assembler) {
+        try {
+            Page<Employee> employeePage = employeeService.findAllEmployeeHATEOAS(pageable);
+            return ResponseEntity.ok(assembler.toModel(employeePage));
         } catch (EmployeeException ex) {
             if(ex.getHttpStatusCode() == HttpStatus.NOT_FOUND) {
                 return ResponseEntity.notFound().build();
