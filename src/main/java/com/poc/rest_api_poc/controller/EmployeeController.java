@@ -2,6 +2,7 @@ package com.poc.rest_api_poc.controller;
 
 import com.poc.rest_api_poc.entity.Employee;
 import com.poc.rest_api_poc.exception.EmployeeException;
+import com.poc.rest_api_poc.exception.EmployeeNotFoundException;
 import com.poc.rest_api_poc.model.FilterDelimeter;
 import com.poc.rest_api_poc.model.EmployeeStatus;
 import com.poc.rest_api_poc.service.EmployeeFilterService;
@@ -36,7 +37,10 @@ public class EmployeeController {
     @GetMapping("/{id}")
     public ResponseEntity<Employee> fetchEmployeeById(@PathVariable("id") int empId) {
         try {
-            return ResponseEntity.ok(employeeService.findEmployeeById(empId));
+            //return ResponseEntity.ok(employeeService.findEmployeeById(empId));
+            return ResponseEntity.ok(employeeService.findEmployeeByIdTestExceptionHandler(empId));
+        } catch (EmployeeNotFoundException ex) {
+            throw new EmployeeNotFoundException(ex.getMessage());
         } catch (EmployeeException ex) {
             if(ex.getHttpStatusCode() == HttpStatus.NOT_FOUND) {
                 return ResponseEntity.notFound().build();

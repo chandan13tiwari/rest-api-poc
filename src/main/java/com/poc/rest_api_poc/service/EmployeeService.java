@@ -2,6 +2,7 @@ package com.poc.rest_api_poc.service;
 
 import com.poc.rest_api_poc.entity.Employee;
 import com.poc.rest_api_poc.exception.EmployeeException;
+import com.poc.rest_api_poc.exception.EmployeeNotFoundException;
 import com.poc.rest_api_poc.model.EmployeeStatus;
 import com.poc.rest_api_poc.repository.EmployeeRepository;
 import org.slf4j.Logger;
@@ -34,6 +35,19 @@ public class EmployeeService {
         if(employee.isEmpty()) {
             LOG.info("Employee with ID: {} not found!", empId);
             throw new EmployeeException("Employee not found", HttpStatus.NOT_FOUND);
+        }
+
+        LOG.info("Employee fetched for ID: {} :: {}", empId, employee.get());
+        return employee.get();
+    }
+
+    public Employee findEmployeeByIdTestExceptionHandler(int empId) {
+        LOG.info("Started looking for Employee with ID: {}", empId);
+
+        Optional<Employee> employee = employeeRepository.findById(empId);
+        if(employee.isEmpty()) {
+            LOG.info("Employee with ID: {} not found!", empId);
+            throw new EmployeeNotFoundException("Employee not found with id: " + empId);
         }
 
         LOG.info("Employee fetched for ID: {} :: {}", empId, employee.get());
