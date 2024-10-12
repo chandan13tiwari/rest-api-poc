@@ -14,9 +14,9 @@ public class Resilience4jConfig {
     public RateLimiterRegistry rateLimiterRegistry() {
         // Create a custom configuration for a RateLimiter
         RateLimiterConfig config = RateLimiterConfig.custom()
-                .timeoutDuration(Duration.ofSeconds(0))
-                .limitRefreshPeriod(Duration.ofSeconds(4))
-                .limitForPeriod(2)
+                .timeoutDuration(Duration.ofSeconds(0)) // wait time for thread
+                .limitRefreshPeriod(Duration.ofSeconds(4)) // this is the window
+                .limitForPeriod(4) // this is number of request api will process
                 .build();
 
         // Create a RateLimiterRegistry with a custom global configuration
