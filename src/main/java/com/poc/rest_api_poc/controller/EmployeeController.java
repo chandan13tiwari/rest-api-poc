@@ -11,6 +11,7 @@ import com.poc.rest_api_poc.utils.AppConstants;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
@@ -36,9 +37,12 @@ public class EmployeeController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity fetchEmployeeById(@PathVariable("id") int empId) {
+    @Cacheable(value = "myCache", key = "#xId")
+    public ResponseEntity fetchEmployeeById(@RequestHeader("x-id") int xId, @PathVariable("id") int empId) {
         try {
             //return ResponseEntity.ok(employeeService.findEmployeeById(empId));
+            // business logic
+            Thread.sleep(3600);
             return ResponseEntity.ok(employeeService.findEmployeeByIdTestExceptionHandler(empId));
         } catch (EmployeeNotFoundException ex) {
             throw new EmployeeNotFoundException(ex.getMessage());
@@ -51,6 +55,8 @@ public class EmployeeController {
             }
 
             return ResponseEntity.internalServerError().build();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
