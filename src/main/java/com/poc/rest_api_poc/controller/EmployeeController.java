@@ -18,6 +18,7 @@ import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -38,11 +39,12 @@ public class EmployeeController {
 
     @GetMapping("/{id}")
     @Cacheable(value = "myCache", key = "#xId")
+    @PreAuthorize("hasAuthority('ROLE_USER')")
     public ResponseEntity fetchEmployeeById(@RequestHeader("x-id") int xId, @PathVariable("id") int empId) {
         try {
             //return ResponseEntity.ok(employeeService.findEmployeeById(empId));
             // business logic
-            Thread.sleep(3600);
+            //Thread.sleep(3600);
             return ResponseEntity.ok(employeeService.findEmployeeByIdTestExceptionHandler(empId));
         } catch (EmployeeNotFoundException ex) {
             throw new EmployeeNotFoundException(ex.getMessage());
@@ -55,8 +57,6 @@ public class EmployeeController {
             }
 
             return ResponseEntity.internalServerError().build();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
         }
     }
 
